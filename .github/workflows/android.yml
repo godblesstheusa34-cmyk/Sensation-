@@ -12,7 +12,7 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.14.4' }
-      - run: gradle assembleDebug
+      - run: gradle lintDebug testDebugUnitTest assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: rosie-home-debug-apk

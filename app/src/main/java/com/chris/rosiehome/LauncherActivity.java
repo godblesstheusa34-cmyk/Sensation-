@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 public class LauncherActivity extends Activity {
     static final int PICK_WIDGET=40, CONFIG_WIDGET=41;
@@ -18,10 +19,12 @@ public class LauncherActivity extends Activity {
         widgetHost=new AppWidgetHost(this, 3010); widgetManager=AppWidgetManager.getInstance(this);
         rosie=new RosieView(this); setContentView(rosie);
     }
-    List<AppEntry> apps() { List<AppEntry> out=new ArrayList<>(); Intent q=new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
+    void loadApps(RosieView target) { Executors.newSingleThreadExecutor().execute(()->{ List<AppEntry> out=queryApps(); runOnUiThread(()->target.setApps(out)); }); }
+    private List<AppEntry> queryApps() { List<AppEntry> out=new ArrayList<>(); Intent q=new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
         for (ResolveInfo r:getPackageManager().queryIntentActivities(q, PackageManager.MATCH_ALL)) {
             if (r.activityInfo.packageName.equals(getPackageName())) continue;
-            out.add(new AppEntry(r.loadLabel(getPackageManager()).toString(),new ComponentName(r.activityInfo.packageName,r.activityInfo.name),r.loadIcon(getPackageManager())));
+            try { out.add(new AppEntry(r.loadLabel(getPackageManager()).toString(),new ComponentName(r.activityInfo.packageName,r.activityInfo.name),r.loadIcon(getPackageManager()))); }
+            catch (RuntimeException ignored) { /* A broken third-party package must not take down Home. */ }
         } Collections.sort(out,(a,b)->a.label.compareToIgnoreCase(b.label)); return out;
     }
     void launch(AppEntry a) { try { startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setComponent(a.component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); } catch(Exception ignored){} }

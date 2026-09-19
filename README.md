@@ -29,11 +29,37 @@ gradle assembleDebug
 
 The GitHub Actions workflow builds on pushes, pull requests, and manual runs and publishes `rosie-home-debug-apk`.
 
+### Why the APK is small
+
+The APK deliberately does not contain copies of every installed application or
+the 91 MB research archive. Android supplies each installed app's label and icon
+at runtime, and the original HTC Java/DEX/native files cannot execute on a
+modern 64-bit Samsung phone. The runtime package contains the launcher code and
+text-based Android vector recreations of Rosie's phone, app-drawer, and
+personalize controls. The supplied binary archives remain reference inputs and
+are not duplicated into the APK.
+
+The archives do contain HTC's original binaries. They are intentionally not
+packaged as Android runtime libraries: the recovered Fusion `.so` files are
+32-bit ARM (`ELFCLASS32`, `EM_ARM`) binaries tied to HTC's obsolete framework,
+whereas the Galaxy S24 Ultra uses a modern 64-bit Android userspace. Including
+them under `jniLibs` would increase the APK while risking an incompatible-ABI
+installation failure; it would not enable the original renderer. Their decoded
+scene tracks and behavior are used as implementation references instead.
+
 ## Install on a phone
 
 1. In this repository's GitHub page, open **Actions**, open the newest successful **Build Rosie Home** run, and download **rosie-home-debug-apk**.
-2. Unzip it, tap `app-debug.apk`, allow installs from your browser/files app when Android asks, and install.
+2. Uninstall an older Rosie Home debug build first (GitHub debug builds can have
+   different test signatures). Unzip the artifact, tap `app-debug.apk`, allow
+   installs from your browser/files app when Android asks, and install.
 3. Open **Settings → Apps → Choose default apps → Home app**, then select **Rosie Home**. Press Home.
+
+If Android returns to One UI, open **Settings → Apps → Rosie Home**, confirm the
+installed version is **1.1**, then choose Rosie Home again under **Home app**.
+Version 1.1 loads the installed-app catalog away from the UI thread so a large
+catalog cannot stall Home at startup, tolerates broken third-party icon
+providers, and always populates the center/default screen first.
 
 ## Known limitations
 
